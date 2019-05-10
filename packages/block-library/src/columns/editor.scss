@@ -164,9 +164,5 @@ div.block-core-columns.is-vertically-aligned-bottom {
  */
 [data-type="core/column"] > .editor-block-list__block-edit > .editor-block-list__breadcrumb {
 	right: 0;
-}
-
-// Position the individual column block breadcrumb correctly.
-.wp-block-columns [data-type="core/column"].is-hovered .block-editor-block-list__breadcrumb {
-	left: -3px;
+	left: auto;
 }
