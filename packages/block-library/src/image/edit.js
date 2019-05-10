@@ -18,6 +18,7 @@ import { getBlobByURL, isBlobURL, revokeBlobURL } from '@wordpress/blob';
 import {
 	Button,
 	ButtonGroup,
+	Dropdown,
 	IconButton,
 	PanelBody,
 	Path,
@@ -34,6 +35,14 @@ import {
 	ExternalLink,
 } from '@wordpress/components';
 import { compose } from '@wordpress/compose';
+import {
+	LEFT,
+	RIGHT,
+	UP,
+	DOWN,
+	BACKSPACE,
+	ENTER,
+} from '@wordpress/keycodes';
 import { withSelect } from '@wordpress/data';
 import {
 	BlockAlignmentToolbar,
@@ -41,10 +50,12 @@ import {
 	BlockIcon,
 	InspectorControls,
 	MediaPlaceholder,
+	URLInput,
+	URLPopover,
 	RichText,
 } from '@wordpress/block-editor';
 import { mediaUpload } from '@wordpress/editor';
-import { Component } from '@wordpress/element';
+import { Component, useState, useCallback, useRef } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import { getPath } from '@wordpress/url';
 import { withViewportMatch } from '@wordpress/viewport';
@@ -96,6 +107,87 @@ const isTemporaryImage = ( id, url ) => ! id && isBlobURL( url );
  */
 const isExternalImage = ( id, url ) => url && ! id && ! isBlobURL( url );
 
+
+const ImageURLInputUI = ( {
+	onChangeopenInNewTab,
+	onChangeUrl,
+	openInNewTab,
+	url,
+} ) => {
+	const [ isOpen, setIsOpen ] = useState( false );
+	const [ isEditingLink, setIsEditingLink ] = useState( false );
+	const autocompleteRef = useRef( null );
+	const onClickOutside = useCallback( () => {
+		return ( event ) => {
+			// The autocomplete suggestions list renders in a separate popover (in a portal),
+			// so onClickOutside fails to detect that a click on a suggestion occurred in the
+			// LinkContainer. Detect clicks on autocomplete suggestions using a ref here, and
+			// return to avoid the popover being closed.
+			const autocompleteElement = this.autocompleteRef.current;
+			if ( autocompleteElement && autocompleteElement.contains( event.target ) ) {
+				return;
+			}
+		};
+	} );
+	const editLink = useCallback( () => {
+		setIsEditingLink( true );
+	} );
+	return (
+		<>
+			<IconButton
+				icon="admin-links"
+				label={ url ? __( 'Edit Link' ) : __( 'Insert Link' ) }
+				aria-expanded={ isOpen }
+				onClick={ () => { setIsOpen( true ); } }
+			/>
+			{ isOpen && (
+				<URLPopover
+					onClickOutside={ onClickOutside }
+					onClose={ () => { setIsOpen( false ); } }
+					renderSettings={ () => (
+						<ToggleControl
+							label={ __( 'Open in New Tab' ) }
+							checked={ true }
+							onChange={ () => {} }
+						/>
+					) }
+				>
+					{ ( ! url || isEditingLink ) && (
+						<URLPopover.LinkEditor
+							className="editor-format-toolbar__link-container-content block-editor-format-toolbar__link-container-content"
+							value={ url }
+							onChangeInputValue={ onChangeUrl }
+							onKeyDown={ ( event ) => {
+								if ( [ LEFT, DOWN, RIGHT, UP, BACKSPACE, ENTER ].indexOf( event.keyCode ) > -1 ) {
+									// Stop the key event from propagating up to ObserveTyping.startTypingInTextField.
+									event.stopPropagation();
+								}
+							} }
+							onKeyPress={ ( event ) => {
+								event.stopPropagation();
+							} }
+							submitLink={ ( event ) => {
+								event.preventDefault();
+							} }
+							autocompleteRef={ autocompleteRef }
+						/>
+					) }
+					{ ( url && isEditingLink ) && (
+						<URLPopover.LinkViewer
+							className="editor-format-toolbar__link-container-content block-editor-format-toolbar__link-container-content"
+							onKeyPress={ ( event ) => {
+								event.stopPropagation();
+							} }
+							url={ url }
+							editLink={ editLink }
+						/>
+					) }
+				</URLPopover>
+			) }
+		</>
+	)
+
+}
 class ImageEdit extends Component {
 	constructor( { attributes } ) {
 		super( ...arguments );
@@ -395,6 +487,10 @@ class ImageEdit extends Component {
 							aria-pressed={ this.state.isEditing }
 							onClick={ this.toggleIsEditing }
 							icon={ editImageIcon }
+						/>
+						<ImageURLInputUI
+							url={ href || '' }
+							onChangeUrl={ this.onSetCustomHref }
 						/>
 					</Toolbar>
 				) }

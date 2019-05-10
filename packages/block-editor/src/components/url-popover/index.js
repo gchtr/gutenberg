@@ -1,12 +1,25 @@
 /**
+ * External dependencies
+ */
+import classnames from 'classnames';
+
+/**
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { Component } from '@wordpress/element';
 import {
-	Popover,
+	ExternalLink,
 	IconButton,
+	Popover,
 } from '@wordpress/components';
+import { prependHTTP, safeDecodeURI, filterURLForDisplay } from '@wordpress/url';
+
+/**
+ * Internal dependencies
+ */
+import URLInput from '../url-input';
+import { isValidHref } from './utils';
 
 class URLPopover extends Component {
 	constructor() {
@@ -68,6 +81,71 @@ class URLPopover extends Component {
 		);
 	}
 }
+
+const LinkEditor = ( {
+	autocompleteRef,
+	className,
+	onChangeInputValue,
+	value,
+	...props
+} ) => (
+	<form
+		className={
+			classnames(
+				className
+			)
+		}
+		{ ...props }
+	>
+		<URLInput
+			value={ value }
+			onChange={ onChangeInputValue }
+			autocompleteRef={ autocompleteRef }
+		/>
+		<IconButton icon="editor-break" label={ __( 'Apply' ) } type="submit" />
+	</form>
+);
+
+URLPopover.LinkEditor = LinkEditor;
+
+const LinkViewerUrl = ( { url, className } ) => {
+	const prependedURL = prependHTTP( url );
+	const linkClassName = classnames(
+		className,
+		{ 'has-invalid-link': ! isValidHref( prependedURL ) }
+	);
+
+	if ( ! url ) {
+		return <span className={ linkClassName }></span>;
+	}
+
+	return (
+		<ExternalLink
+			className={ linkClassName }
+			href={ url }
+		>
+			{ filterURLForDisplay( safeDecodeURI( url ) ) }
+		</ExternalLink>
+	);
+};
+
+const LinkViewer = ( { className, url, editLink, ...props } ) => {
+	return (
+		<div
+			className={
+				classnames(
+					className
+				)
+			}
+			{ ...props }
+		>
+			<LinkViewerUrl url={ url } />
+			<IconButton icon="edit" label={ __( 'Edit' ) } onClick={ editLink } />
+		</div>
+	);
+};
+
+URLPopover.LinkViewer = LinkViewer;
 
 /**
  * @see https://github.com/WordPress/gutenberg/blob/master/packages/block-editor/src/components/url-popover/README.md

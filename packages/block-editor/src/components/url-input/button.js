@@ -50,25 +50,15 @@ class URLInputButton extends Component {
 					} ) }
 				/>
 				{ expanded &&
-					<form
-						className="editor-url-input__button-modal block-editor-url-input__button-modal"
-						onSubmit={ this.submitLink }
-					>
-						<div className="editor-url-input__button-modal-line block-editor-url-input__button-modal-line">
-							<IconButton
-								className="editor-url-input__back block-editor-url-input__back"
-								icon="arrow-left-alt"
-								label={ __( 'Close' ) }
-								onClick={ this.toggle }
-							/>
-							<URLInput value={ url || '' } onChange={ onChange } />
-							<IconButton
-								icon="editor-break"
-								label={ __( 'Submit' ) }
-								type="submit"
-							/>
-						</div>
-					</form>
+					<URLPopover.LinkEditor
+						className="editor-format-toolbar__link-container-content block-editor-format-toolbar__link-container-content"
+						value={ url }
+						onChangeInputValue={ onChange }
+						onKeyDown={ this.onKeyDown }
+						onKeyPress={ stopKeyPropagation }
+						submitLink={ this.submitLink }
+						autocompleteRef={ this.autocompleteRef }
+					/>
 				}
 			</div>
 		);
